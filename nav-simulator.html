@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>비산대피 - 실시간 도보 대피 내비게이션</title>
+  <!-- 카카오맵 SDK (JS 키 연동) -->
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5ddb7874a60fb8d43ccbed1748d8c1e1&autoload=false"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+    :root {
+      --primary: #004626;
+      --pc: #0c6038;
+      --pf: #a6f4bf;
+      --alert: #791315;
+      --alert-bg: #ffdad6;
+      --sec: #5b6326;
+      --sc: #e0e99d;
+      --surface: #f5faff;
+      --card-bg: #ffffff;
+      --ink: #0b1e27;
+      --ink2: #404941;
+      --border: #d0e1d4;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      word-break: keep-all;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* 상단 헤더 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--primary);
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 20px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .badge-alert { background: #ffdad6; color: var(--alert); }
+    .badge-safe { background: var(--pf); color: var(--primary); }
+
+    /* 경보/상태 카드 */
+    .card {
+      background: var(--card-bg);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 70, 38, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+    .card-offroute {
+      border: 3px solid var(--alert);
+      background: #fff8f8;
+      animation: pulseAlert 1.2s infinite;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(121, 19, 21, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(121, 19, 21, 0); }
+    }
+
+    /* 거대 방향 화살표 컴포넌트 */
+    .arrow-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 10px auto;
+      border-radius: 50%;
+      background: var(--pc);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 70, 38, 0.28);
+      transition: background 0.3s;
+    }
+    .arrow-container.offroute {
+      background: var(--alert);
+      box-shadow: 0 10px 30px rgba(121, 19, 21, 0.35);
+    }
+    .arrow-glyph {
+      width: 100px;
+      height: 120px;
+      position: relative;
+      transition: transform 0.15s ease-out;
+      transform-origin: 50% 50%;
+    }
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 50px solid transparent;
+      border-right: 50px solid transparent;
+      border-bottom: 60px solid #ffffff;
+      margin: 0 auto;
+    }
+    .arrow-body {
+      width: 38px;
+      height: 60px;
+      background: #ffffff;
+      margin: -2px auto 0;
+      border-radius: 0 0 8px 8px;
+    }
+
+    /* 행동 안내 문구 및 거리 */
+    .action-text {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--ink);
+    }
+    .action-text.alert { color: var(--alert); }
+    .distance-badge {
+      font-size: 42px;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0;
+    }
+    .sub-guide {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink2);
+      margin: 0;
+    }
+
+    /* Waypoint 진행 바 */
+    .progress-bar-bg {
+      background: #e1ede4;
+      height: 14px;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* 큰 버튼 */
+    .btn {
+      width: 100%;
+      min-height: 64px;
+      border: 0;
+      border-radius: 20px;
+      font-size: 20px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-alert { background: var(--alert); color: #fff; }
+    .btn-sub { background: #e3ede5; color: var(--ink); }
+
+    /* 네이버 지도 영역 */
+    .map-box {
+      width: 100%;
+      height: 220px;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: #d8e6dc;
+      border: 2px solid var(--border);
+    }
+    #naverMap { width: 100%; height: 100%; }
+    .map-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      gap: 8px;
+    }
+
+    /* 가상 시뮬레이션 컨트롤 패널 */
+    .sim-panel {
+      background: #eef5f0;
+      border: 2px dashed var(--pc);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sim-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--pc);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sim-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .sim-row button {
+      flex: 1;
+      min-height: 48px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 12px;
+      border: 1px solid #b4d1bc;
+      background: #fff;
+      cursor: pointer;
+    }
+    .sim-row button:active { background: #d0e7d7; }
+    .slider-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .slider-box input[type=range] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    /* 손전등 오버레이 */
+    .flashlight-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      z-index: 9999;
+      color: #000;
+      font-size: 24px;
+      font-weight: 800;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      cursor: pointer;
+    }
+    .flashlight-overlay.on { display: flex; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 상단 헤더 -->
+  <header class="header">
+    <span>비산대피 (안심 내비)</span>
+    <span id="gpsModeBadge" class="badge badge-safe">시뮬레이션 모드</span>
+  </header>
+
+  <!-- 긴급 상태 배너 (평소: 안심 / 이탈 시: 경고) -->
+  <div id="statusCard" class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="badge badge-safe" id="waypointBadge">1차 경유지 이동 중</span>
+      <span style="font-size:15px; font-weight:700; color:var(--ink2);" id="timeEta">도보 약 4분</span>
+    </div>
+
+    <!-- 대형 방향 화살표 (Turn-by-Turn + 나침반 회전) -->
+    <div class="arrow-container" id="arrowBox">
+      <div class="arrow-glyph" id="arrowGlyph">
+        <div class="arrow-head"></div>
+        <div class="arrow-body"></div>
+      </div>
+    </div>
+
+    <!-- 주요 행동 지침 및 남은 거리 -->
+    <h1 class="action-text" id="actionText">정면으로 직진하세요</h1>
+    <p class="distance-badge"><span id="remainDist">180</span>m</p>
+    <p class="sub-guide" id="subGuide">마을 큰길 진입로 방향으로 이동</p>
+
+    <!-- Waypoint 진행도 -->
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill" style="width: 20%;"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; color:var(--ink2);">
+      <span>산림 위험가구</span>
+      <span id="targetName">1차: 큰길 진입로</span>
+      <span>덕동 마을회관</span>
+    </div>
+  </div>
+
+  <!-- 보조 시각화 (카카오맵 연동 영역) -->
+  <div class="card" style="padding:12px; gap:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:0 6px;">
+      <span style="font-size:16px; font-weight:800;">📍 실시간 대피로 지도 (카카오맵)</span>
+      <span style="font-size:13px; color:var(--ink2);">오프라인 무중단 지원</span>
+    </div>
+    <div class="map-box">
+      <div id="kakaoMap" style="width:100%; height:100%;"></div>
+      <div class="map-fallback" id="mapFallback">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--pc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+          <line x1="9" y1="3" x2="9" y2="18"></line>
+          <line x1="15" y1="6" x2="15" y2="21"></line>
+        </svg>
+        <div style="font-weight:800; font-size:16px; color:var(--pc);">대피 경로 추적 중</div>
+        <div style="font-size:13px; color:var(--ink2);">
+          카카오맵 로딩 중...<br/>
+          (카카오 개발자 콘솔의 사이트 도메인에 localhost 및 배포 주소 등록 시 실시간 지도 표시)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 비상 도구 버튼 (손전등, 호루라기, 119) -->
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+    <button class="btn btn-sub" id="btnWhistle">🚨 비상 호루라기</button>
+    <button class="btn btn-sub" id="btnFlash">💡 화면 손전등</button>
+  </div>
+  <button class="btn btn-alert" id="btn119">📞 119 긴급 위치 전송 및 전화</button>
+
+  <!-- iOS 나침반 센서 권한 요청 버튼 (필요 시 노출) -->
+  <button class="btn btn-sub" id="btnIosSensor" style="display:none; background:#ffecb3;">
+    🧭 나침반 센서 허용하기 (iOS Safari)
+  </button>
+
+  <!-- 가상 이동 시뮬레이션 패널 (테스트용) -->
+  <section class="sim-panel">
+    <div class="sim-title">
+      <span>🛠️ 가상 이동 시뮬레이션 모드</span>
+      <label style="font-size:13px; font-weight:600; cursor:pointer;">
+        <input type="checkbox" id="simToggle" checked/> 시뮬레이션 켜기
+      </label>
+    </div>
+
+    <!-- 나침반 각도(Heading) 슬라이더 -->
+    <div class="slider-box">
+      <div style="display:flex; justify-content:space-between;">
+        <span>스마트폰 방위각(Heading): <b id="headingVal">0°</b></span>
+        <span id="diffVal" style="color:var(--pc);">각도차(diff): 0°</span>
+      </div>
+      <input type="range" id="headingSlider" min="0" max="360" value="0"/>
+    </div>
+
+    <!-- 위치 이동 버튼 -->
+    <div class="sim-row">
+      <button id="btnForward">🚶 앞으로 10m 전진</button>
+      <button id="btnPassWp">⏩ 경유지 통과 (15m 이내)</button>
+    </div>
+    <div class="sim-row">
+      <button id="btnOffRoute" style="color:var(--alert);">⚠️ 경로 30m 이탈 테스트</button>
+      <button id="btnFinish">🏁 최종 대피소 도착</button>
+    </div>
+    <div class="sim-row">
+      <button id="btnReset" style="background:#f0f0f0;">🔄 처음부터 다시 시작</button>
+      <button id="btnVoiceTest">🔊 음성 다시 듣기</button>
+    </div>
+  </section>
+</div>
+
+<!-- 화면 손전등 오버레이 -->
+<div class="flashlight-overlay" id="flashOverlay">
+  <div>
+    화면 손전등 켜짐<br/>
+    <small style="font-size:18px; font-weight:600;">(화면 아무 곳이나 터치하면 꺼집니다)</small>
+  </div>
+</div>
+
+<script>
+/**
+ * 비산대피 (Bisan Evacuation) 실시간 LBS 도보 내비게이션 엔진
+ */
+
+// 1. 사전 정의된 안전 하산 경로 (GPX 기반 Waypoint 좌표 배열)
+// 충북 제천시 백운면 덕동리 산악 지대 -> 덕동 마을회관 대피소
+const SAFE_ROUTE = [
+  { lat: 37.13150, lng: 128.23000, name: '출발지 (산림 위험가구)' },
+  { lat: 37.13200, lng: 128.23090, name: '1차: 마을 큰길 진입로' },
+  { lat: 37.13245, lng: 128.23190, name: '2차: 완만 안심로(계단 없음)' },
+  { lat: 37.13280, lng: 128.23255, name: '3차: 안전 쉼터 앞' },
+  { lat: 37.13300, lng: 128.23300, name: '최종 목적지: 덕동 마을회관(대피소)' }
+];
+
+// 상태 변수
+let currentWpIndex = 1; // 다음 목표 경유지 (0은 출발지)
+let myPos = { ...SAFE_ROUTE[0] }; // 내 현재 위치
+let myHeading = 0; // 스마트폰이 바라보는 방향 (0~360)
+let smoothedDiff = 0; // Low-Pass Filter 적용된 화살표 각도
+let isSimulation = true;
+let isOffRoute = false;
+let isArrived = false;
+let lastSpeechText = '';
+let lastSpeechTime = 0;
+const SPEECH_COOLDOWN_MS = 15000; // 15초 쿨타임
+
+// 카카오맵 상태 변수
+let kakaoMap = null;
+let myMarker = null;
+let destMarker = null;
+let polyline = null;
+
+function initKakaoMap() {
+  if (typeof kakao !== 'undefined' && kakao.maps) {
+    kakao.maps.load(() => {
+      try {
+        const container = document.getElementById('kakaoMap');
+        const options = {
+          center: new kakao.maps.LatLng(myPos.lat, myPos.lng),
+          level: 4
+        };
+        kakaoMap = new kakao.maps.Map(container, options);
+
+        // 전체 대피로 Polyline 그리기
+        const linePath = SAFE_ROUTE.map(p => new kakao.maps.LatLng(p.lat, p.lng));
+        polyline = new kakao.maps.Polyline({
+          path: linePath,
+          strokeWeight: 6,
+          strokeColor: '#004626',
+          strokeOpacity: 0.9,
+          strokeStyle: 'solid'
+        });
+        polyline.setMap(kakaoMap);
+
+        // 최종 대피소 마커
+        const destPos = SAFE_ROUTE[SAFE_ROUTE.length - 1];
+        destMarker = new kakao.maps.Marker({
+          position: new kakao.maps.LatLng(destPos.lat, destPos.lng),
+          map: kakaoMap
+        });
+
+        // 내 위치 마커
+        myMarker = new kakao.maps.Marker({
+          position: new kakao.maps.LatLng(myPos.lat, myPos.lng),
+          map: kakaoMap
+        });
+
+        const fallback = document.getElementById('mapFallback');
+        if (fallback) fallback.style.display = 'none';
+      } catch (err) {
+        console.warn('카카오맵 렌더링 대체 모드:', err);
+      }
+    });
+  }
+}
+
+function updateKakaoMapPos() {
+  if (!kakaoMap || !myMarker) return;
+  try {
+    const newPos = new kakao.maps.LatLng(myPos.lat, myPos.lng);
+    myMarker.setPosition(newPos);
+    kakaoMap.panTo(newPos);
+  } catch (err) {}
+}
+
+// 2. 수학 및 LBS 계산 함수
+const R = 6371000; // 지구 반경 (m)
+const rad = deg => deg * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+
+// 거리 계산 (Haversine 공식)
+function getDistance(p1, p2) {
+  const dLat = rad(p2.lat - p1.lat);
+  const dLng = rad(p2.lng - p1.lng);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(rad(p1.lat)) * Math.cos(rad(p2.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+// 방위각 (Bearing: p1 -> p2, 0~360°)
+function getBearing(p1, p2) {
+  const y = Math.sin(rad(p2.lng - p1.lng)) * Math.cos(rad(p2.lat));
+  const x = Math.cos(rad(p1.lat)) * Math.sin(rad(p2.lat)) -
+            Math.sin(rad(p1.lat)) * Math.cos(rad(p2.lat)) * Math.cos(rad(p2.lng - p1.lng));
+  return (deg(Math.atan2(y, x)) + 360) % 360;
+}
+
+// 각도 차이 정규화 (-180° ~ +180°)
+function normalizeDiff(diff) {
+  return (diff + 540) % 360 - 180;
+}
+
+// 3. Low-Pass Filter (센서 떨림 보정, 원형 각도 보간 alpha = 0.2)
+function applyLowPassFilter(targetDiff) {
+  let delta = targetDiff - smoothedDiff;
+  while (delta > 180) delta -= 360;
+  while (delta < -180) delta += 360;
+  smoothedDiff += 0.2 * delta; // 이전 80% + 현재 20%
+  while (smoothedDiff > 180) smoothedDiff -= 360;
+  while (smoothedDiff < -180) smoothedDiff += 360;
+  return smoothedDiff;
+}
+
+// 4. 음성 안내 (TTS with 15초 쿨타임 or 상태 변경)
+function speakGuide(text, force = false) {
+  if (!('speechSynthesis' in window)) return;
+  const now = Date.now();
+  if (!force && text === lastSpeechText && now - lastSpeechTime < SPEECH_COOLDOWN_MS) {
+    return; // 쿨타임 적용
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ko-KR';
+  utterance.rate = 0.88; // 어르신을 위한 또박또박 속도
+  window.speechSynthesis.speak(utterance);
+  lastSpeechText = text;
+  lastSpeechTime = now;
+}
+
+// 5. 핵심 Turn-by-Turn 엔진 업데이트 루프
+function updateNavigationEngine() {
+  const targetWp = SAFE_ROUTE[currentWpIndex];
+  const distToTarget = getDistance(myPos, targetWp);
+
+  // 전체 최종 대피소까지의 남은 거리 계산
+  let totalRemainingDist = distToTarget;
+  for (let i = currentWpIndex; i < SAFE_ROUTE.length - 1; i++) {
+    totalRemainingDist += getDistance(SAFE_ROUTE[i], SAFE_ROUTE[i + 1]);
+  }
+
+  // 15m 이내 경유지 통과 판정
+  if (distToTarget <= 15) {
+    if (currentWpIndex < SAFE_ROUTE.length - 1) {
+      currentWpIndex++;
+      speakGuide(`${targetWp.name}을 통과했습니다. 다음 안전 경로로 이동하세요.`, true);
+      updateNavigationEngine();
+      return;
+    } else {
+      // 최종 대피소 도착
+      isArrived = true;
+      document.getElementById('actionText').textContent = '대피소 도착 완료!';
+      document.getElementById('remainDist').textContent = '0';
+      document.getElementById('subGuide').textContent = '마을회관 안전 구역 안으로 들어가세요';
+      document.getElementById('arrowBox').style.background = 'var(--pc)';
+      document.getElementById('arrowGlyph').style.display = 'none';
+      document.getElementById('progressFill').style.width = '100%';
+      speakGuide('안전한 대피소에 무사히 도착하셨습니다. 회관 안으로 들어가세요.', true);
+      return;
+    }
+  }
+
+  // 25m 이상 경로 이탈 감지
+  // (이전 경유지와 현재 목표 경유지를 잇는 경로선과의 거리 판정 시뮬레이션)
+  const prevWp = SAFE_ROUTE[currentWpIndex - 1] || SAFE_ROUTE[0];
+  const baselineDist = getDistance(prevWp, targetWp);
+  const triangleDist = getDistance(myPos, prevWp) + distToTarget;
+  const deviation = Math.max(0, triangleDist - baselineDist);
+
+  isOffRoute = deviation > 25;
+
+  // 방위각 및 diff 계산
+  const targetBearing = getBearing(myPos, targetWp);
+  const rawDiff = normalizeDiff(targetBearing - myHeading);
+  const filteredDiff = applyLowPassFilter(rawDiff);
+
+  // UI 엘리먼트 갱신
+  const arrowGlyph = document.getElementById('arrowGlyph');
+  const actionText = document.getElementById('actionText');
+  const remainDist = document.getElementById('remainDist');
+  const subGuide = document.getElementById('subGuide');
+  const statusCard = document.getElementById('statusCard');
+  const arrowBox = document.getElementById('arrowBox');
+  const waypointBadge = document.getElementById('waypointBadge');
+  const targetName = document.getElementById('targetName');
+  const progressFill = document.getElementById('progressFill');
+  const timeEta = document.getElementById('timeEta');
+
+  remainDist.textContent = Math.round(totalRemainingDist);
+  targetName.textContent = targetWp.name;
+  waypointBadge.textContent = `${currentWpIndex}차 경유지 안내 중`;
+  timeEta.textContent = `도보 약 ${Math.max(1, Math.ceil(totalRemainingDist / 60))}분`;
+
+  const progressPercent = Math.min(95, Math.round(((currentWpIndex - 1) + (1 - distToTarget / 150)) / (SAFE_ROUTE.length - 1) * 100));
+  progressFill.style.width = `${Math.max(10, progressPercent)}%`;
+
+  // 화살표 회전 적용
+  arrowGlyph.style.display = 'block';
+  arrowGlyph.style.transform = `rotate(${filteredDiff}deg)`;
+
+  let actionMsg = '';
+  if (isOffRoute) {
+    statusCard.className = 'card card-offroute';
+    arrowBox.className = 'arrow-container offroute';
+    actionText.className = 'action-text alert';
+    actionMsg = '경로를 벗어났습니다!';
+    actionText.textContent = actionMsg;
+    subGuide.textContent = '화살표 방향으로 돌아가세요 (위험 지역 주의)';
+    if ('vibrate' in navigator) navigator.vibrate([300, 150, 300]);
+    speakGuide('경로를 벗어났습니다. 화살표 방향을 확인해 주세요.');
+  } else {
+    statusCard.className = 'card';
+    arrowBox.className = 'arrow-container';
+    actionText.className = 'action-text';
+
+    // 각도에 따른 안내 문구 판정
+    if (filteredDiff >= -20 && filteredDiff <= 20) {
+      actionMsg = '정면으로 직진하세요';
+    } else if (filteredDiff > 20 && filteredDiff <= 110) {
+      actionMsg = '오른쪽 방향으로 가세요';
+    } else if (filteredDiff < -20 && filteredDiff >= -110) {
+      actionMsg = '왼쪽 방향으로 가세요';
+    } else {
+      actionMsg = '뒤로 돌아서 가세요';
+    }
+    actionText.textContent = actionMsg;
+    subGuide.textContent = `${targetWp.name}을 향해 이동 중`;
+    speakGuide(actionMsg);
+  }
+
+  // 슬라이더 지표 표시
+  document.getElementById('headingVal').textContent = `${Math.round(myHeading)}°`;
+  document.getElementById('diffVal').textContent = `회전각: ${Math.round(filteredDiff)}°`;
+
+  // 카카오맵 내 위치 마커 및 중심 이동
+  updateKakaoMapPos();
+}
+
+// 6. 실시간 센서 및 나침반 연동 (DeviceOrientation & Geolocation)
+function initDeviceSensors() {
+  // 나침반 방향 센서
+  window.addEventListener('deviceorientation', e => {
+    if (isSimulation) return;
+    let heading = null;
+    if (e.webkitCompassHeading) {
+      // iOS
+      heading = e.webkitCompassHeading;
+    } else if (e.alpha !== null) {
+      // Android
+      heading = 360 - e.alpha;
+    }
+    if (heading !== null) {
+      myHeading = heading;
+      updateNavigationEngine();
+    }
+  }, true);
+
+  // GPS 위치 센서
+  if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(
+      pos => {
+        if (isSimulation) return;
+        myPos.lat = pos.coords.latitude;
+        myPos.lng = pos.coords.longitude;
+        updateNavigationEngine();
+      },
+      err => {
+        console.warn('GPS 수신 제한 (시뮬레이션 모드로 지속 안내 가능):', err);
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 7000 }
+    );
+  }
+}
+
+// iOS 나침반 권한 요청 버튼 체크
+if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+  const btnIos = document.getElementById('btnIosSensor');
+  btnIos.style.display = 'block';
+  btnIos.addEventListener('click', () => {
+    DeviceOrientationEvent.requestPermission().then(res => {
+      if (res === 'granted') {
+        btnIos.style.display = 'none';
+        initDeviceSensors();
+      }
+    });
+  });
+} else {
+  initDeviceSensors();
+}
+
+// 7. 가상 시뮬레이션 인터랙션 이벤트 바인딩
+const simToggle = document.getElementById('simToggle');
+simToggle.addEventListener('change', e => {
+  isSimulation = e.target.checked;
+  const badge = document.getElementById('gpsModeBadge');
+  if (isSimulation) {
+    badge.textContent = '시뮬레이션 모드';
+    badge.className = 'badge badge-alert';
+  } else {
+    badge.textContent = '실제 GPS·센서 모드';
+    badge.className = 'badge badge-safe';
+  }
+});
+
+// 방위각 슬라이더 (0~360°)
+document.getElementById('headingSlider').addEventListener('input', e => {
+  myHeading = parseFloat(e.target.value);
+  updateNavigationEngine();
+});
+
+// 앞으로 10m 전진
+document.getElementById('btnForward').addEventListener('click', () => {
+  const targetWp = SAFE_ROUTE[currentWpIndex];
+  const b = getBearing(myPos, targetWp);
+  const d = 10 / R;
+  const lat1 = rad(myPos.lat), lng1 = rad(myPos.lng), brng = rad(b);
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+  const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  myPos.lat = deg(lat2);
+  myPos.lng = deg(lng2);
+  updateNavigationEngine();
+});
+
+// 경유지 통과 (15m 이내 순간이동)
+document.getElementById('btnPassWp').addEventListener('click', () => {
+  const targetWp = SAFE_ROUTE[currentWpIndex];
+  myPos.lat = targetWp.lat - 0.00008; // 약 9m 거리
+  myPos.lng = targetWp.lng - 0.00008;
+  updateNavigationEngine();
+});
+
+// 경로 30m 이탈 테스트
+document.getElementById('btnOffRoute').addEventListener('click', () => {
+  myPos.lat += 0.00035; // 약 38m 횡방향 이탈
+  myPos.lng += 0.00035;
+  updateNavigationEngine();
+});
+
+// 최종 대피소 도착 테스트
+document.getElementById('btnFinish').addEventListener('click', () => {
+  const finalWp = SAFE_ROUTE[SAFE_ROUTE.length - 1];
+  currentWpIndex = SAFE_ROUTE.length - 1;
+  myPos.lat = finalWp.lat;
+  myPos.lng = finalWp.lng;
+  updateNavigationEngine();
+});
+
+// 처음부터 다시 시작
+document.getElementById('btnReset').addEventListener('click', () => {
+  currentWpIndex = 1;
+  myPos = { ...SAFE_ROUTE[0] };
+  myHeading = 0;
+  smoothedDiff = 0;
+  isArrived = false;
+  document.getElementById('headingSlider').value = 0;
+  updateNavigationEngine();
+  speakGuide('대피 안내를 다시 시작합니다. 화살표 방향을 따라오세요.', true);
+});
+
+// 음성 다시 듣기
+document.getElementById('btnVoiceTest').addEventListener('click', () => {
+  const txt = document.getElementById('actionText').textContent;
+  speakGuide(txt, true);
+});
+
+// 8. 긴급 도구 (호루라기, 손전등, 119)
+let audioCtx = null, osc = null, sirenInterval = null;
+document.getElementById('btnWhistle').addEventListener('click', function() {
+  if (osc) {
+    clearInterval(sirenInterval);
+    osc.stop(); osc.disconnect(); osc = null;
+    this.textContent = '🚨 비상 호루라기';
+    this.style.background = '#e3ede5';
+    return;
+  }
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.25;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value = 800;
+  osc.start();
+
+  let toggle = false;
+  sirenInterval = setInterval(() => {
+    toggle = !toggle;
+    osc.frequency.value = toggle ? 1000 : 600;
+  }, 350);
+
+  this.textContent = '⏹️ 호루라기 끄기';
+  this.style.background = '#ffdad6';
+});
+
+// 화면 손전등
+const flashOverlay = document.getElementById('flashOverlay');
+document.getElementById('btnFlash').addEventListener('click', () => flashOverlay.classList.add('on'));
+flashOverlay.addEventListener('click', () => flashOverlay.classList.remove('on'));
+
+// 119 통화 및 위치 전송
+document.getElementById('btn119').addEventListener('click', () => {
+  const latStr = myPos.lat.toFixed(5);
+  const lngStr = myPos.lng.toFixed(5);
+  if (confirm(`119 종합상황실로 현재 위치(${latStr}, ${lngStr})를 전송하고 즉시 통화 연결하시겠습니까?`)) {
+    window.location.href = 'tel:119';
+  }
+});
+
+// 초기 실행
+updateNavigationEngine();
+initKakaoMap();
+</script>
+</body>
+</html>

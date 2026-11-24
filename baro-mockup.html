@@ -1,0 +1,304 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>비산대피 목업</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+:root{--primary:#004626;--pc:#0c6038;--pf:#a6f4bf;--pfd:#8bd7a4;--tr:#791315;--tc:#992c29;--tfixed:#ffdad6;--sec:#5b6326;--sc:#e0e99d;--surface:#f5faff;--sl:#e8f6ff;--sc2:#ddf1fe;--sh:#d7ebf8;--ink:#0b1e27;--ink2:#404941;--errc:#ffdad6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--surface);color:var(--ink);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;word-break:keep-all;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased;font-size:16px}
+button{font:inherit;color:inherit}
+.app{max-width:440px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px 48px;min-height:100vh}
+.scr{display:none;flex-direction:column;gap:14px}
+.scr.on{display:flex}
+.step{font-size:14px;font-weight:800;color:var(--pc);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.step span{color:var(--ink2);font-weight:600}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card{background:#fff;border-radius:22px;padding:18px;box-shadow:0 2px 14px rgba(0,70,38,.07);display:flex;flex-direction:column;gap:12px;min-width:0}
+.center{align-items:center;text-align:center}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:14px;font-weight:700;max-width:100%}
+.b-s{background:var(--sc);color:#3d4310}.b-g{background:var(--sh)}.b-t{background:var(--tr);color:#fff}.b-p{background:var(--pc);color:#fff}.b-pf{background:var(--pfd);color:var(--primary)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--pc);flex-shrink:0}
+.h1{font-size:clamp(22px,6.4vw,28px);line-height:1.35;font-weight:800;margin:0;letter-spacing:-.02em}
+.h2{font-size:clamp(20px,5.8vw,25px);font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.3}
+.h3{font-size:18px;font-weight:800;margin:4px 2px 0}
+.big{font-size:clamp(28px,8vw,34px);font-weight:800;line-height:1.2}
+.t{font-size:17px;font-weight:700;line-height:1.4}
+.sub{font-size:15px;font-weight:600;color:var(--ink2);line-height:1.5;margin:0}
+.btn{width:100%;border:0;border-radius:20px;padding:16px 18px;font-weight:800;font-size:18px;min-height:62px;cursor:pointer;text-align:left;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .12s;line-height:1.35}
+.btn:active{transform:scale(.98)}
+.btn small{display:block;font-size:14px;font-weight:600;opacity:.9;margin-top:3px}
+.btn:disabled{opacity:.6}
+.btn-xl{min-height:76px;font-size:20px}
+.p{background:var(--pc);color:#fff}.t-btn{background:var(--tr);color:#fff}.g{background:var(--sc2);color:var(--ink)}
+.on-state{background:var(--sc)!important}
+.link{background:none;border:0;color:var(--pc);font-weight:800;font-size:16px;padding:10px;cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.alert{padding:0;overflow:hidden;gap:0}
+.alert-head{background:linear-gradient(135deg,var(--tr),var(--tc));color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:18px;font-weight:800}
+.chip{background:#fff;color:var(--ink);font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.body{padding:20px 18px;display:flex;flex-direction:column;gap:14px}
+.red{color:var(--tr)}
+u{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--pfd);color:var(--pc)}
+.tile{background:var(--sl);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.tile.sec{background:var(--sc)}
+.tile.sc2{background:var(--sc2)}
+.dest{background:var(--pc);color:#fff;border-radius:16px;padding:12px 14px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{border:0;border-radius:999px;background:var(--sc);color:#3d4310;padding:10px 18px;font-weight:800;font-size:16px;cursor:pointer}
+.turn{width:170px;height:170px;border-radius:50%;background:var(--pc);display:flex;align-items:center;justify-content:center;margin:6px auto;box-shadow:0 10px 26px rgba(0,70,38,.25)}
+.arrow{position:relative;width:96px;height:110px;transition:transform .5s}
+.arrow::before{content:"";position:absolute;left:0;top:0;border-left:48px solid transparent;border-right:48px solid transparent;border-bottom:58px solid #fff}
+.arrow::after{content:"";position:absolute;left:28px;top:48px;width:40px;height:62px;background:#fff;border-radius:6px}
+.map{position:relative;height:96px;border-radius:18px;background:#dbeee3;overflow:hidden;margin-top:4px}
+.road{position:absolute;left:10%;right:10%;top:50%;height:12px;margin-top:-6px;background:#fff;border-radius:6px}
+.prog{position:absolute;left:10%;top:50%;height:12px;margin-top:-6px;width:0;background:var(--pc);border-radius:6px;transition:width .6s}
+.me{position:absolute;top:50%;left:10%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:var(--tr);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:left .6s}
+.goal{position:absolute;right:3%;top:50%;transform:translateY(-50%);background:var(--pc);color:#fff;font-size:12px;font-weight:700;padding:5px 8px;border-radius:10px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:var(--sl);border-radius:16px;padding:12px 14px;text-align:left;min-width:0}
+.metric b{font-size:24px;font-weight:800;display:block;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stat{border-radius:14px;padding:10px 4px;text-align:center;font-size:13px;font-weight:700;min-width:0}
+.stat b{display:block;font-size:22px;font-weight:800}
+.bar{display:flex;height:18px;border-radius:999px;background:var(--sh);overflow:hidden;padding:3px;gap:3px}
+.bar>div{height:100%;border-radius:999px}
+.person{background:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,70,38,.06);border:1.5px solid transparent;min-width:0}
+.person>div:nth-child(2){flex:1;min-width:0}
+.av{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;background:var(--pf);color:var(--primary)}
+.call{width:44px;height:44px;border-radius:50%;background:var(--sc2);display:flex;align-items:center;justify-content:center;text-decoration:none;color:var(--ink);font-weight:800;font-size:13px;flex-shrink:0}
+.st{background:var(--sl);border-radius:18px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+.st>div:last-child{min-width:0}
+.sdot{width:14px;height:14px;border-radius:50%;margin-top:6px;flex-shrink:0;background:#bfc9bf}
+.st.run .sdot{background:var(--sec);box-shadow:0 0 0 5px rgba(91,98,38,.2)}
+.st.ok .sdot{background:var(--pc)}
+.st.ok{background:var(--sc2)}
+.check{display:flex;align-items:center;gap:10px;background:var(--sl);border-radius:14px;padding:12px;font-weight:700;font-size:15px;flex:1;min-width:0}
+.check input{width:22px;height:22px;accent-color:var(--pc);margin:0;flex-shrink:0}
+.flashov{position:fixed;inset:0;background:#fff;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--ink);z-index:9;cursor:pointer}
+.flashov.on{display:flex}
+.pulse{width:72px;height:72px;border-radius:50%;background:var(--tr);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;box-shadow:0 0 0 14px rgba(121,19,21,.12),0 0 0 28px rgba(121,19,21,.06)}
+.mute{font-size:13px;color:var(--ink2)}
+</style></head>
+<body><div class="app">
+
+<!-- STEP 1 -->
+<section class="scr on" id="s1">
+<div class="step">STEP 1 · 경보 수신 <span>재난문자 자동 변환</span></div>
+<div class="row"><span class="badge b-s">음성 안내 켜짐</span><span class="badge b-g">큰 글씨 모드</span></div>
+<div class="card alert">
+<div class="alert-head"><span>긴급재난문자 수신</span><span class="chip">제천시청</span></div>
+<div class="body">
+<div class="big red">산사태 경보!</div>
+<h1 class="h1">지금 즉시 <u>마을회관</u>으로 대피하세요</h1>
+<div class="tile"><div class="t">위험 지역 : 충북 제천시 백운면 덕동리</div><p class="sub">집중호우로 토사 유출 위험이 매우 큽니다. 어르신께서는 지체 없이 안전한 대피소로 이동 바랍니다.</p></div>
+<div class="tile sc2"><div class="t">추천 경로: 도보 4분 (평지 위주)</div></div>
+<button class="btn p btn-xl" id="btnStart">대피 안내 시작<small>큰 화살표와 쉬운 음성 안내</small></button>
+<button class="btn t-btn" id="btn119a">119 긴급 위치 연결<small>현재 위치를 119 상황실에 전송합니다</small></button>
+</div></div>
+<div class="card"><div class="t">현재 위치</div><div class="sub" id="gps1">위치 확인 중…</div></div>
+<p class="sub">이장님 및 119 종합상황실과 실시간 연동 중</p>
+<button class="link" id="goS4">이장 · 보호자 관제 화면 보기</button>
+</section>
+
+<!-- STEP 2 -->
+<section class="scr" id="s2">
+<div class="step">STEP 2 · 쉬운 길 이동</div>
+<div class="row"><span class="badge b-s"><span class="dot"></span>쉬운 길 대피 중</span><span class="badge b-g">GPS 추적</span></div>
+<div class="card center">
+<div class="dest"><span>목표: 덕동 마을회관</span><span class="badge b-pf">안전구역</span></div>
+<button class="pill" id="voiceBtn"><span id="voiceTxt">음성 안내 방송 중</span></button>
+<div class="turn"><div class="arrow" id="arrow"></div></div>
+<h2 class="h2" id="turnT">앞으로 직진하세요</h2>
+<p class="sub" id="turnS">큰길을 따라 120m 이동</p>
+<div class="map"><div class="road"></div><div class="prog" id="prog"></div><div class="me" id="meDot">나</div><div class="goal">마을회관</div></div>
+<div class="grid2" style="width:100%">
+<div class="metric"><div class="sub">남은 거리</div><b><span id="rem">250</span>m</b></div>
+<div class="metric"><div class="sub">예상 소요</div><b id="eta">도보 4분</b></div>
+</div>
+<div class="tile sec" style="width:100%;text-align:left"><div class="t">완만한 평지 안심로</div><div class="sub">계단 없음 · 휠체어/보행기 통행 가능</div></div>
+<div class="sub" id="gps2"></div>
+</div>
+<div class="card"><div class="sub">다음 안내 지점</div><div class="t" id="nextT">GS25 편의점 사거리에서 우회전</div></div>
+<div class="grid2">
+<button class="btn g" id="siren" style="font-size:16px;min-height:56px;justify-content:center">비상 호루라기</button>
+<button class="btn g" id="flashBtn" style="font-size:16px;min-height:56px;justify-content:center">손전등 켜기</button>
+</div>
+<button class="btn t-btn btn-xl" id="btn119b">[ 119 위치 연결 ]<small>누르면 구조대원에게 내 위치 즉시 전송</small></button>
+</section>
+
+<!-- STEP 3 -->
+<section class="scr" id="s3">
+<div class="step">STEP 3 · 위기 시 119 긴급 연결 <span class="badge b-t" style="font-size:12px">실시간 연동</span></div>
+<div class="card center">
+<div class="pulse">나</div>
+<h2 class="h2" id="s3title">내 위치 전송 중</h2>
+<p class="sub">말씀하지 않으셔도 119 구조대에 현재 계신 정확한 위치가 바로 전달되었습니다.</p>
+<div class="tile sc2" style="width:100%;text-align:left"><div class="sub">전송된 상세 위치</div><div class="t" id="sentPos">-</div><div class="mute" id="sentAt"></div></div>
+</div>
+<h3 class="h3">안전 확인 진행 상황</h3>
+<div class="st wait" id="st1"><span class="sdot"></span><div><div class="t">내 위치 전송</div><div class="sub">대기</div></div></div>
+<div class="st wait" id="st2"><span class="sdot"></span><div><div class="t">119 구조대 연계</div><div class="sub">대기</div></div></div>
+<div class="st wait" id="st3"><span class="sdot"></span><div><div class="t">이장 · 보호자 알림</div><div class="sub">대기</div></div></div>
+<div class="card row"><div class="av" style="width:56px;height:56px">김영철</div><div style="flex:1;min-width:0"><div class="mute" style="color:var(--sec);font-weight:800">마을 안전 지킴이</div><div class="t">덕동리 김영철 이장</div><p class="sub" style="margin:4px 0 0">"어르신, 당황하지 마시고 제천초등학교 방향 큰길로 천천히 걸어오세요."</p></div></div>
+<a class="btn t-btn btn-xl" href="tel:119">119 구조대와 직접 통화</a>
+<button class="btn p" id="back2">쉬운 길안내 화면으로 돌아가기</button>
+<p class="sub" style="text-align:center;color:var(--sec);font-weight:800">큰 글씨와 음성 안내가 지속 작동 중입니다</p>
+</section>
+
+<!-- STEP 4 -->
+<section class="scr" id="s4">
+<div class="step">STEP 4 · 대피 현황 확인 <span>이장 · 보호자 관제</span></div>
+<div class="card">
+<div class="row" style="justify-content:space-between"><div><div class="mute" style="color:var(--sec);font-weight:800">충북 제천시 백운면</div><h2 class="h2" style="font-size:21px">마을 주민 현황 (덕동리 1반)</h2></div></div>
+<div class="row" style="justify-content:space-between;align-items:flex-end"><span class="t">대피 완료율</span><span><b style="font-size:28px;color:var(--pc)">88%</b> <span class="sub">(21/24명)</span></span></div>
+<div class="bar"><div style="width:87.5%;background:var(--pc)"></div><div style="width:8.3%;background:var(--sec)"></div><div style="width:4.2%;background:var(--tr)"></div></div>
+<div class="row sub" style="justify-content:space-between"><span>완료 21</span><span>이동 중 2</span><span style="color:var(--tr);font-weight:800">미확인 1</span></div>
+<div class="stats">
+<div class="stat" style="background:var(--sl)">총 주민<b>24</b></div>
+<div class="stat" style="background:var(--sc2);color:var(--pc)">대피완료<b>21</b></div>
+<div class="stat" style="background:var(--sc)">이동중<b>2</b></div>
+<div class="stat" style="background:var(--errc);color:var(--tr)">미확인<b>1</b></div>
+</div>
+<div class="row" style="justify-content:space-between"><span class="mute">최종 갱신 <span id="clk"></span></span><button class="badge g" style="border:0;cursor:pointer" id="refresh">새로고침</button></div>
+</div>
+<div class="card" style="background:var(--errc);box-shadow:none">
+<div class="row" style="justify-content:space-between"><span class="t" style="color:#93000a">미대피 주민 긴급 확인 필요</span><span class="badge b-t" style="font-size:12px">우선 연락</span></div>
+<p class="sub" style="color:#93000a">산사태 위험 지역(덕동계곡 방면) 거주 어르신 1명의 응답이 없습니다. 119 즉시 연계를 권장합니다.</p>
+</div>
+<h3 class="h3">가구별 실시간 현황</h3>
+<div class="person"><div class="av">김순자</div><div><div class="t">김순자 어르신 · 78세</div><div class="sub">덕동초 체육관 도착 · 19:24</div></div><span class="badge b-p">완료</span><a class="call" href="tel:01000000001">전화</a></div>
+<div class="person"><div class="av">박영수</div><div><div class="t">박영수 어르신 · 81세</div><div class="sub">덕동초 체육관 도착 · 19:30</div></div><span class="badge b-p">완료</span><a class="call" href="tel:01000000002">전화</a></div>
+<div class="person" style="border-color:var(--sec)"><div class="av" style="background:var(--sc)">최정옥</div><div><div class="t">최정옥 어르신 <span class="badge b-s" style="font-size:12px;padding:2px 8px">보호자 동행</span></div><div class="sub" style="color:var(--sec);font-weight:700">마을회관 앞 이동 중 (도보 4분 남음)</div></div><a class="call" href="tel:01000000003">전화</a></div>
+<div class="person" style="border-color:var(--tr);background:#fff5f4"><div class="av" style="background:var(--tc);color:#fff">이갑득</div><div><div class="t" style="color:var(--tr)">이갑득 어르신 <span class="badge b-t" style="font-size:12px;padding:2px 8px">독거가구</span></div><div class="sub" style="color:var(--tr);font-weight:700" id="p4s">위치 수신 두절 (최종: 18:50 안방)</div></div><a class="call" style="background:var(--tr);color:#fff" href="tel:01000000004">긴급</a></div>
+<div class="card">
+<div class="t">이장 현장 확인 체크</div>
+<div class="row"><label class="check"><input type="checkbox" checked/>마을 방송 3회 완료</label><label class="check"><input type="checkbox" checked/>대피소 셔틀 도착</label></div>
+</div>
+<button class="btn t-btn btn-xl" id="handBtn">미확인자 119 전달<small>이갑득 어르신 위치·연락처 구조대 즉시 전송</small></button>
+<p class="sub" id="hstat" style="text-align:center">클릭 시 충북소방본부 119 종합상황실로 미대피 주민 정보가 즉시 연동됩니다.</p>
+<button class="link" id="backS1">← 대피 안내 화면으로</button>
+</section>
+
+</div>
+<div class="flashov" id="flashOv">손전등 (화면을 누르면 끕니다)</div>
+
+<script>
+const $=i=>document.getElementById(i);
+const DEST={lat:37.1330,lng:128.2330};
+const MOCK={lat:37.1318,lng:128.2301};
+let me={...MOCK,src:'시연 좌표'};
+
+function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id));window.scrollTo(0,0);}
+function clock(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',hour12:false});}
+function meters(a,b){const R=6371000,r=x=>x*Math.PI/180;const dA=r(b.lat-a.lat),dO=r(b.lng-a.lng);const h=Math.sin(dA/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dO/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+
+// 현재 위치
+function paintGps(){
+  const c=`${me.lat.toFixed(5)}, ${me.lng.toFixed(5)}`;
+  const d=Math.round(meters(me,DEST));
+  $('gps1').textContent=`${c} (${me.src})`;
+  $('gps2').textContent=`현재 위치 ${c} · 마을회관까지 약 ${d}m`;
+}
+function locate(){
+  paintGps();
+  if(!navigator.geolocation){me.src='시연 좌표 (GPS 미지원)';paintGps();return;}
+  navigator.geolocation.getCurrentPosition(
+    p=>{me={lat:p.coords.latitude,lng:p.coords.longitude,src:'GPS 실시간'};paintGps();},
+    ()=>{me.src='시연 좌표 (위치 권한 없음)';paintGps();},
+    {enableHighAccuracy:true,timeout:8000,maximumAge:60000}
+  );
+}
+
+// 음성
+let paused=false;
+function say(t){
+  if(paused||!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';u.rate=.85;speechSynthesis.speak(u);
+}
+$('voiceBtn').addEventListener('click',()=>{
+  paused=!paused;
+  $('voiceTxt').textContent=paused?'음성 안내 일시정지됨':'음성 안내 방송 중';
+  $('voiceBtn').style.opacity=paused?'.7':'1';
+  if(paused&&'speechSynthesis' in window)speechSynthesis.cancel();
+});
+
+// 쉬운 길 안내 (시뮬레이션: 6초마다 다음 안내)
+const STEPS=[
+  {t:'앞으로 직진하세요',sub:'큰길을 따라 120m 이동',rem:250,turn:0,next:'GS25 편의점 사거리에서 우회전'},
+  {t:'우회전하세요',sub:'편의점 사거리에서 우회전 후 80m 이동',rem:130,turn:90,next:'제천초등학교 방향 큰길 직진'},
+  {t:'직진하세요',sub:'평지 길을 따라 50m 이동',rem:50,turn:0,next:'덕동 마을회관 도착'},
+  {t:'도착했습니다',sub:'마을회관 안으로 들어가세요',rem:0,turn:null,next:'안전구역 안에 계십니다'}
+];
+let si=0,navT=null;
+function paintNav(talk){
+  const s=STEPS[si];
+  $('turnT').textContent=s.t;
+  $('turnS').textContent=s.sub;
+  $('rem').textContent=s.rem;
+  $('eta').textContent=s.rem?`도보 ${Math.max(1,Math.ceil(s.rem/60))}분`:'도착';
+  $('nextT').textContent=s.next;
+  const a=$('arrow');
+  a.style.display=s.turn===null?'none':'';
+  a.style.transform=`rotate(${s.turn||0}deg)`;
+  const p=1-s.rem/250;
+  $('prog').style.width=(p*80)+'%';
+  $('meDot').style.left=(10+p*80)+'%';
+  if(talk)say(s.t+'. '+s.sub);
+}
+function startNav(){
+  si=0;paintNav(true);
+  clearInterval(navT);
+  navT=setInterval(()=>{
+    if(paused)return;
+    if(si<STEPS.length-1){si++;paintNav(true);}else clearInterval(navT);
+  },6000);
+}
+
+// 119 위치 전송 (시뮬레이션 단계 표시)
+function setSt(id,cls,txt){const el=$(id);el.className='st '+cls;el.querySelector('.sub').textContent=txt;}
+function sendLocation(){
+  $('sentPos').textContent=`${me.lat.toFixed(5)}, ${me.lng.toFixed(5)} 인근`;
+  $('sentAt').textContent=`전송 시각 ${clock()} · ${me.src}`;
+  $('s3title').textContent='내 위치 전송 중';
+  setSt('st1','run','전송 중…');setSt('st2','wait','대기');setSt('st3','wait','대기');
+  show('s3');
+  setTimeout(()=>{$('s3title').textContent='내 위치 전송 완료';setSt('st1','ok','전송 완료 · '+clock());setSt('st2','run','119 구조대 연계 중 · 통화 대기');},1200);
+  setTimeout(()=>setSt('st2','ok','백운면 전담 구조 차량 좌표 공유 완료'),3000);
+  setTimeout(()=>{setSt('st3','run','알림 발송 중…');},3200);
+  setTimeout(()=>setSt('st3','ok','덕동리 이장 및 등록 가족 안심 문자 발송 완료'),4500);
+}
+
+// 호루라기 (WebAudio 실제 소리)
+let ac=null,osc=null,sirT=null;
+$('siren').addEventListener('click',()=>{
+  if(osc){clearInterval(sirT);osc.stop();osc.disconnect();osc=null;$('siren').classList.remove('on-state');return;}
+  ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  osc=ac.createOscillator();const g=ac.createGain();g.gain.value=.2;
+  osc.connect(g);g.connect(ac.destination);osc.frequency.value=800;osc.start();
+  let hi=false;sirT=setInterval(()=>{hi=!hi;osc.frequency.value=hi?1000:600;},400);
+  $('siren').classList.add('on-state');
+});
+// 손전등 (화면을 밝게 채워 대체)
+$('flashBtn').addEventListener('click',()=>$('flashOv').classList.add('on'));
+$('flashOv').addEventListener('click',()=>$('flashOv').classList.remove('on'));
+
+// 화면 이동
+$('btnStart').addEventListener('click',()=>{show('s2');startNav();});
+$('btn119a').addEventListener('click',sendLocation);
+$('btn119b').addEventListener('click',sendLocation);
+$('back2').addEventListener('click',()=>show('s2'));
+$('goS4').addEventListener('click',()=>{show('s4');$('clk').textContent=clock();});
+$('backS1').addEventListener('click',()=>show('s1'));
+$('refresh').addEventListener('click',()=>{$('clk').textContent=clock();});
+
+// 미확인자 119 이첩
+$('handBtn').addEventListener('click',()=>{
+  if(!confirm('119 긴급 구조본부에 [이갑득 어르신 / 덕동리 142번지] 미대피자 정보를 바로 이첩하시겠습니까?'))return;
+  $('p4s').textContent=`119 이첩 완료 · ${clock()}`;
+  $('handBtn').textContent='119 이첩 완료';
+  $('handBtn').disabled=true;
+  $('hstat').textContent='충북 제천소방서 상황실로 미확인자 위치 데이터가 전송되었습니다.';
+});
+
+paintNav(false);
+locate();
+$('clk').textContent=clock();
+</script>
+</body></html>
