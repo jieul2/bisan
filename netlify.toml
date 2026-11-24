@@ -2,6 +2,21 @@
   command = "npm run build"
   publish = "dist"
 
+# 산림청 국립산림과학원 산불위험예보 API 프록시 (CORS 방지)
+[[redirects]]
+  from = "/api-forest/*"
+  to = "https://apis.data.go.kr/1400377/forestPointV2/:splat"
+  status = 200
+  force = true
+
+# 기상청 단기예보 조회서비스 API 프록시 (CORS 방지)
+[[redirects]]
+  from = "/api-kma/*"
+  to = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/:splat"
+  status = 200
+  force = true
+
+# SPA 라우팅
 [[redirects]]
   from = "/*"
   to = "/index.html"

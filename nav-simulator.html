@@ -800,13 +800,11 @@ const flashOverlay = document.getElementById('flashOverlay');
 document.getElementById('btnFlash').addEventListener('click', () => flashOverlay.classList.add('on'));
 flashOverlay.addEventListener('click', () => flashOverlay.classList.remove('on'));
 
-// 119 통화 및 위치 전송
+// 119 통화 및 위치 전송 (실제 발신 차단 & 목업 모의 통화 안내)
 document.getElementById('btn119').addEventListener('click', () => {
   const latStr = myPos.lat.toFixed(5);
   const lngStr = myPos.lng.toFixed(5);
-  if (confirm(`119 종합상황실로 현재 위치(${latStr}, ${lngStr})를 전송하고 즉시 통화 연결하시겠습니까?`)) {
-    window.location.href = 'tel:119';
-  }
+  alert(`[119 모의 훈련 통화 화면]\n\n"119 종합상황실입니다. 어르신 현재 위치(${latStr}, ${lngStr})가 확인되었습니다. 안전하게 대피하세요."\n\n※ 실제 119로 발신되지 않는 훈련용 시뮬레이션입니다.`);
 });
 
 // 초기 실행
